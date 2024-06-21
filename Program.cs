@@ -7,9 +7,11 @@ using jwt.Models.DBContext;
 using jwt.Models.Identity;
 using jwt.Seed;
 using jwt.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 
 
@@ -31,6 +33,26 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
 builder.Services.Configure<JwtConfig>(builder.Configuration.GetSection("JWT"));
 builder.Services.AddScoped<IAuth,Auth>();
 builder.Services.AddScoped<Seeder>();
+builder.Services.AddAuthentication(option =>
+{
+    option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    option.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(o =>
+{
+    o.RequireHttpsMetadata = true;
+    o.SaveToken = true;
+    o.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+    {
+        ValidateIssuer = true,
+        ValidIssuer = builder.Configuration.GetValue<string>("JWT:Issuer"),
+        ValidateAudience = true,
+        ValidAudience = builder.Configuration.GetValue<string>("JWT:Audence"),
+
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration.GetValue<string>("JWT:key")))
+    };
+});
 
 var app = builder.Build();
 
